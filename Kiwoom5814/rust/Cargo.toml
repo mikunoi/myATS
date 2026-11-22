@@ -1,0 +1,15 @@
+[package]
+name = "kiwoom5814-core"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+bigdecimal = "=0.4.11"
+serde_json = "1"
+num-traits = "0.2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+

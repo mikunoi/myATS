@@ -1,7 +1,0 @@
-name: Windows build environment
-on: workflow_dispatch
-jobs:
-  tools:
-    runs-on: windows-2025
-    steps:
-      - run: rustc --version

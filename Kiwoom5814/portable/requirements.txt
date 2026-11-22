@@ -1,0 +1,3 @@
+-r ../ats/requirements.txt
+cryptography>=46,<47; sys_platform != "win32"
+tzdata>=2025.2

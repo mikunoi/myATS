@@ -1,0 +1,45 @@
+{
+  "broker_mode": "paper",
+  "kiwoom_environment": "production",
+  "signal_chart_market": "KRX",
+  "database_path": "data/stock_trader_next.sqlite3",
+  "log_path": "logs/stock_trader_next.log",
+  "risk_rate": 0.005,
+  "capital_usage_limit": 0.98,
+  "max_symbol_capital_fraction": null,
+  "mock_capital_limit_krw": null,
+  "atr_period": 14,
+  "daily_ichimoku": [
+    9,
+    26,
+    52
+  ],
+  "weekly_ichimoku": [
+    5,
+    26,
+    52
+  ],
+  "max_watchlist": 10,
+  "max_candidates_per_sector": 2,
+  "weekly_analysis_weekday": 6,
+  "weekly_analysis_hour": 6,
+  "watchlist_sync_hour": 13,
+  "watchlist_sync_minute": 45,
+  "watchlist_group_name": "(5814)감시종목",
+  "excluded_symbols": [
+    "0046A0"
+  ],
+  "max_positions": 10,
+  "max_addons_cycle": 4,
+  "max_addons_day": 2,
+  "addon_atr_multiple": 1.0,
+  "entry_stop_atr_multiple": 3.0,
+  "kijun_stop_atr_multiple": 1.0,
+  "evaluation_minutes_before_close": 60,
+  "order_trade_type": "6",
+  "realtime_stale_after_seconds": 5.0,
+  "realtime_login_timeout_seconds": 10.0,
+  "realtime_reconnect_base_seconds": 1.0,
+  "realtime_reconnect_cap_seconds": 30.0,
+  "weekly_entry_stop_atr_multiple": 2.0
+}

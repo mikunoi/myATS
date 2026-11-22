@@ -1,0 +1,105 @@
+name: Build and release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the built version
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: distribution-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DISTRIBUTION_APP: myATS
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            extension: run
+            executable: github-app-launcher
+          - os: windows-2025
+            platform: windows
+            extension: exe
+            executable: github-app-launcher.exe
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Rust launcher and application components
+        run: |
+          rustup update stable
+          cargo +stable test --locked --manifest-path launcher/Cargo.toml
+          cargo +stable build --locked --release --manifest-path launcher/Cargo.toml
+          cargo +stable test --locked --manifest-path Kiwoom5814/rust/Cargo.toml
+          cargo +stable build --locked --release --manifest-path Kiwoom5814/rust/Cargo.toml
+          mkdir -p Kiwoom5814/rust/bin
+          cp Kiwoom5814/rust/target/release/kiwoom5814-core* Kiwoom5814/rust/bin/
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: ""
+          auto-activate: true
+      - name: Bundle and verify the installer
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          EXTENSION: ${{ matrix.extension }}
+          EXECUTABLE: ${{ matrix.executable }}
+        run: |
+          set -euo pipefail
+          TK='tk=8.6'
+          if [[ "$PLATFORM" == linux ]]; then TK='tk=8.6=xft_*'; bash scripts/fonts.sh; fi
+          conda create --yes --prefix ./build/runtime --override-channels -c conda-forge python=3.13 "$TK" pillow openpyxl websockets 'cryptography>=46,<47' tzdata conda-pack
+          if [[ "$PLATFORM" == windows ]]; then
+            conda install --yes --prefix ./build/runtime --override-channels -c conda-forge pystray
+          fi
+          conda run --prefix ./build/runtime conda-pack --prefix ./build/runtime --format zip --zip-symlinks -o build/runtime.zip
+          binary="launcher/target/release/$EXECUTABLE"
+          VERSION=$("$binary" --version)
+          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$VERSION" ]]; then
+            echo 'Release tag must match the Rust package version'; exit 1
+          fi
+          installer="dist/$DISTRIBUTION_APP-Setup-$VERSION-$PLATFORM-x64.$EXTENSION"
+          python scripts/package.py "$DISTRIBUTION_APP" "$binary" build/runtime.zip "$installer"
+          python scripts/smoke.py "$installer" "$DISTRIBUTION_APP" "$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-installer
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    if: github.ref_type == 'tag' || inputs.publish || (github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Release '))
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish tested installers
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd dist
+          chmod +x ./*.run
+          VERSION=$(./*.run --version)
+          sha256sum ./*.run ./*.exe > SHA256SUMS.txt
+          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$DISTRIBUTION_APP $VERSION" --generate-notes ./*.run ./*.exe SHA256SUMS.txt
