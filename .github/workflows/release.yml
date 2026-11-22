@@ -62,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
           TK='tk=8.6'
-          if [[ "$PLATFORM" == linux ]]; then TK='tk=8.6=xft_*'; bash scripts/fonts.sh; fi
+          if [[ "$PLATFORM" == linux ]]; then TK='tk=8.6.13=xft_h590fa25_4'; bash scripts/fonts.sh; fi
           conda create --yes --prefix ./build/runtime --override-channels -c conda-forge python=3.13 "$TK" pillow openpyxl websockets 'cryptography>=46,<47' tzdata conda-pack
           if [[ "$PLATFORM" == windows ]]; then
             conda install --yes --prefix ./build/runtime --override-channels -c conda-forge pystray
